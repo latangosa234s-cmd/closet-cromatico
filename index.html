@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ECEEEA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161D" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Clóset">
+<meta name="description" content="Sube fotos de tu ropa, quítales el fondo y arma outfits según la colorimetría.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<title>Clóset Cromático</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: atelier board. Sticky header + segmented tabs, swatch-card grid, flat-lay outfit cards with a hue ring. */
+:root {
+  --bg: #ECEEEA;
+  --surface: #FAFBF8;
+  --surface-2: #E2E5E0;
+  --ink: #18202C;
+  --muted: #5B6470;
+  --line: #CDD2CB;
+  --accent: #2E47CF;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DDE2FA;
+  --good: #2F7A4A;
+  --warn: #A5661A;
+  --bad: #B23A30;
+  --check-a: #F3F4F1;
+  --check-b: #E0E3DD;
+  --shadow: 0 1px 2px rgba(24,32,44,.06), 0 6px 18px rgba(24,32,44,.07);
+  --f-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161D; --surface: #1A2029; --surface-2: #232B36; --ink: #E8EBEF; --muted: #98A2AF;
+    --line: #2F3845; --accent: #8EA0FF; --accent-ink: #0E1430; --accent-soft: #263064;
+    --good: #6CC48D; --warn: #E2A75A; --bad: #F08A7E; --check-a: #20262F; --check-b: #2A313C;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 22px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161D; --surface: #1A2029; --surface-2: #232B36; --ink: #E8EBEF; --muted: #98A2AF;
+  --line: #2F3845; --accent: #8EA0FF; --accent-ink: #0E1430; --accent-soft: #263064;
+  --good: #6CC48D; --warn: #E2A75A; --bad: #F08A7E; --check-a: #20262F; --check-b: #2A313C;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 22px rgba(0,0,0,.25);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; -webkit-tap-highlight-color: transparent; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+header.top .wrap { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-block: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+.brand h1 { font-size: 24px; font-weight: 800; letter-spacing: -.02em; }
+.brand .ring { width: 26px; height: 26px; border-radius: 50%; background: conic-gradient(#e0473a, #e9b23a, #7fbf4a, #2fb3b1, #3f63d6, #a54fc4, #e0473a); -webkit-mask: radial-gradient(circle, transparent 6px, #000 7px); mask: radial-gradient(circle, transparent 6px, #000 7px); }
+.badge { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
+.tabs { display: flex; background: var(--surface-2); border-radius: 12px; padding: 4px; gap: 2px; }
+.tabs button { border: 0; background: transparent; padding: 8px 16px; border-radius: 9px; font-weight: 600; color: var(--muted); }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.tabs .count { font-family: var(--f-mono); font-size: 11px; margin-left: 4px; opacity: .7; }
+
+main { padding-block: 24px 64px; }
+.view { display: grid; gap: 20px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 16px; font-weight: 600; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--bad); }
+.btn.danger.armed { background: var(--bad); color: var(--surface); border-color: var(--bad); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.small { padding: 6px 12px; font-size: 13px; }
+
+.notice { background: var(--accent-soft); border-radius: 12px; padding: 12px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.notice p { margin: 0; flex: 1 1 260px; min-width: 0; }
+
+/* Chips */
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 6px 14px; font-weight: 600; font-size: 14px; color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip .n { font-family: var(--f-mono); font-size: 11px; margin-left: 6px; opacity: .75; }
+
+/* Closet grid */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(146px, 1fr)); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; text-align: left; padding: 0; }
+.card:hover { border-color: var(--muted); }
+.tile { aspect-ratio: 1 / 1; max-width: 100%; background: var(--surface-2); display: grid; place-items: center; padding: 14px; position: relative; }
+.tile img { position: absolute; inset: 14px; width: calc(100% - 28px); height: calc(100% - 28px); object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,.14)); }
+.tile .tag { position: absolute; top: 8px; left: 8px; font-size: 11px; background: var(--surface); border-radius: 6px; padding: 2px 7px; color: var(--muted); font-weight: 600; }
+.card .meta { padding: 10px 12px 12px; display: grid; gap: 6px; min-width: 0; }
+.card .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.swatches { display: flex; gap: 0; height: 10px; border-radius: 3px; overflow: hidden; }
+.swatches span { display: block; height: 100%; }
+.cname { font-size: 12px; color: var(--muted); }
+
+.empty { border: 1.5px dashed var(--line); border-radius: 16px; padding: 40px 20px; text-align: center; display: grid; gap: 10px; justify-items: center; }
+
+/* Add / editor */
+.drop { border: 1.5px dashed var(--muted); border-radius: 16px; padding: 36px 20px; text-align: center; background: var(--surface); display: grid; gap: 10px; justify-items: center; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop h2 { font-size: 26px; }
+.editor { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 760px) { .editor { grid-template-columns: minmax(0, 1fr); } }
+.stage { background-color: var(--check-a); background-image: conic-gradient(var(--check-b) 25%, transparent 0 50%, var(--check-b) 0 75%, transparent 0); background-size: 22px 22px; border-radius: 14px; border: 1px solid var(--line); display: grid; place-items: center; padding: 10px; min-height: 280px; position: relative; overflow: hidden; }
+.stage canvas { max-width: 100%; max-height: 62vh; touch-action: none; display: block; }
+.stage.brush canvas { cursor: crosshair; }
+.stage .busy { position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--surface) 70%, transparent); font-weight: 600; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 16px; min-width: 0; }
+.field { display: grid; gap: 6px; }
+.field label, .field .lbl { font-size: 13px; font-weight: 600; color: var(--muted); }
+.field input[type="text"], .field select { border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 9px 12px; width: 100%; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.seg { display: flex; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { flex: 1 1 auto; border: 0; background: transparent; padding: 7px 10px; border-radius: 8px; font-weight: 600; font-size: 13px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.colorlist { display: grid; gap: 6px; }
+.colorrow { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; }
+.colorrow .dot { width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line); }
+.mono { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+.ai { font-size: 13px; border-radius: 10px; padding: 8px 12px; background: var(--surface-2); }
+
+/* Outfits */
+.controls { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); align-items: end; }
+.controls .field.wide { grid-column: 1 / -1; }
+.ogrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+.outfit { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: grid; }
+.lay { position: relative; aspect-ratio: 5 / 6; max-width: 100%; background: var(--surface-2); }
+.lay img { position: absolute; object-fit: contain; filter: drop-shadow(0 5px 7px rgba(0,0,0,.16)); }
+.lay .p-jackets { left: 3%; top: 4%; width: 42%; height: 50%; }
+.lay .p-tops { left: 44%; top: 3%; width: 48%; height: 38%; }
+.lay .p-bottoms { left: 48%; top: 40%; width: 42%; height: 54%; }
+.lay .p-vestidos { left: 42%; top: 4%; width: 52%; height: 80%; }
+.lay .p-zapatos { left: 5%; top: 64%; width: 38%; height: 30%; }
+.lay .p-accesorios { left: 8%; top: 52%; width: 26%; height: 16%; }
+.lay.nojacket .p-zapatos { top: 58%; height: 34%; }
+.lay.nojacket .p-tops { left: 30%; width: 50%; }
+.lay.nojacket .p-bottoms { left: 50%; }
+.lay.nojacket .p-vestidos { left: 30%; }
+.score { position: absolute; top: 10px; right: 10px; background: var(--surface); border-radius: 99px; padding: 3px 10px; font-family: var(--f-mono); font-size: 12px; font-weight: 500; }
+.score.hi { color: var(--good); } .score.mid { color: var(--warn); } .score.lo { color: var(--bad); }
+.obody { padding: 14px 16px 16px; display: grid; gap: 10px; }
+.ohead { display: flex; gap: 12px; align-items: center; }
+.ohead h3 { font-size: 19px; font-weight: 700; flex: 1; min-width: 0; }
+.wheel { width: 46px; height: 46px; border-radius: 50%; position: relative; flex: none; background: conic-gradient(hsl(0 70% 55%), hsl(60 70% 55%), hsl(120 55% 50%), hsl(180 60% 45%), hsl(240 60% 58%), hsl(300 55% 55%), hsl(360 70% 55%)); }
+.wheel::after { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: var(--surface); }
+.wheel i { position: absolute; width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--surface); z-index: 1; transform: translate(-50%, -50%); box-shadow: 0 0 0 1px var(--line); }
+.strip { display: flex; gap: 6px; flex-wrap: wrap; }
+.strip span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.strip span b { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--line); display: inline-block; }
+.why { margin: 0; font-size: 14px; }
+.pieces { font-size: 13px; color: var(--muted); margin: 0; }
+
+/* Sheet */
+.sheet-back { position: fixed; inset: 0; background: rgba(10,14,20,.45); z-index: 20; display: grid; place-items: center; padding: 16px; }
+.sheet { background: var(--surface); border-radius: 18px; width: min(720px, 100%); max-height: 90vh; overflow: auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 620px) { .sheet { grid-template-columns: minmax(0, 1fr); } }
+.sheet .tile { aspect-ratio: auto; min-height: 240px; }
+.sheet .tile img { position: static; width: 100%; height: auto; max-height: 50vh; }
+.sheet .panel { border: 0; border-radius: 0; }
+
+.backup { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 8px; display: flex; gap: 12px 24px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.backup > div:first-child { flex: 1 1 280px; min-width: 0; }
+.backup .hint { margin-top: 4px; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 10px; font-weight: 600; z-index: 30; max-width: calc(100% - 32px); }
+.section-title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.section-title h2 { font-size: 28px; font-weight: 800; letter-spacing: -.02em; }
+@media (prefers-reduced-motion: no-preference) {
+  .outfit, .card { transition: border-color .15s, transform .15s; }
+  .outfit:hover { transform: translateY(-2px); }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><span class="ring" aria-hidden="true"></span><h1>Clóset Cromático</h1></div>
+    <span class="badge" id="storeBadge">Guardado en este teléfono</span>
+    <nav class="tabs" role="tablist" aria-label="Secciones">
+      <button role="tab" id="tab-closet" data-tab="closet" aria-selected="true">Clóset<span class="count" id="countItems"></span></button>
+      <button role="tab" id="tab-agregar" data-tab="agregar" aria-selected="false">Agregar</button>
+      <button role="tab" id="tab-outfits" data-tab="outfits" aria-selected="false">Outfits</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- CLOSET -->
+  <section class="view" id="view-closet">
+    <div class="notice" id="exampleNotice" hidden>
+      <p><b>Estas son prendas de ejemplo.</b> Sube fotos de tu ropa y desaparecerán. Mientras tanto puedes probar el generador de outfits con ellas.</p>
+      <button class="btn primary small" data-goto="agregar">Subir mi ropa</button>
+    </div>
+    <div class="notice" id="installNotice" hidden>
+      <p><b>Instálala como app:</b> toca <b>Compartir</b> y luego <b>Agregar a pantalla de inicio</b>. Se abrirá a pantalla completa y funcionará sin internet.</p>
+      <button class="btn small" id="installDismiss">Entendido</button>
+    </div>
+    <div class="chips" id="catChips"></div>
+    <div class="grid" id="closetGrid"></div>
+    <div class="backup">
+      <div>
+        <div class="eyebrow">Respaldo</div>
+        <p class="hint">Tus prendas viven solo en este teléfono. Guarda un respaldo de vez en cuando o para pasarlas a otro equipo.</p>
+      </div>
+      <div class="row">
+        <button class="btn small" id="exportBtn">Exportar respaldo</button>
+        <label class="btn small" for="importInput">Importar respaldo</label>
+        <input type="file" id="importInput" accept="application/json,.json" hidden>
+      </div>
+    </div>
+  </section>
+
+  <!-- AGREGAR -->
+  <section class="view" id="view-agregar" hidden>
+    <div class="drop" id="drop">
+      <h2>Sube fotos de tu ropa</h2>
+      <p class="muted" style="margin:0;max-width:52ch">Quito el fondo automáticamente. Funciona mejor con la prenda extendida sobre una superficie lisa (cama, piso o pared) y buena luz.</p>
+      <div class="row" style="justify-content:center">
+        <label class="btn primary" for="fileInput">Elegir fotos</label>
+        <input type="file" id="fileInput" accept="image/*" multiple hidden>
+      </div>
+      <p class="hint">También puedes arrastrar varias fotos aquí. JPG o PNG.</p>
+    </div>
+
+    <div id="editorWrap" hidden>
+      <div class="row" style="margin-bottom:12px"><span class="eyebrow" id="queueInfo"></span></div>
+      <div class="editor">
+        <div class="stage" id="stage">
+          <canvas id="editCanvas" aria-label="Vista previa de la prenda sin fondo"></canvas>
+          <div class="busy" id="busy" hidden>Quitando el fondo…</div>
+        </div>
+        <div class="panel">
+          <div class="field">
+            <label for="itemName">Nombre</label>
+            <input type="text" id="itemName" placeholder="Ej. Camisa de lino blanca" maxlength="48">
+          </div>
+          <div class="field">
+            <label for="itemCat">Tipo de prenda</label>
+            <select id="itemCat"></select>
+          </div>
+          <div class="field">
+            <span class="lbl">Colores detectados</span>
+            <div class="colorlist" id="detColors"></div>
+          </div>
+          <div class="field">
+            <span class="lbl">Recorte</span>
+            <div class="seg" id="cutMode">
+              <button data-mode="ai" aria-pressed="true">Con IA</button>
+              <button data-mode="color" aria-pressed="false">Por color</button>
+            </div>
+            <div class="ai" id="aiNote" hidden></div>
+          </div>
+          <div class="field" id="tolField" hidden>
+            <label for="tol">Sensibilidad del recorte <span class="mono" id="tolVal"></span></label>
+            <input type="range" id="tol" min="0" max="60" value="22">
+            <p class="hint">Sube si queda fondo; baja si se come la prenda. 0 deja la foto completa.</p>
+          </div>
+          <div class="field">
+            <span class="lbl">Retocar a mano</span>
+            <div class="seg" id="brushMode">
+              <button data-mode="view" aria-pressed="true">Ver</button>
+              <button data-mode="erase" aria-pressed="false">Borrar</button>
+              <button data-mode="restore" aria-pressed="false">Restaurar</button>
+            </div>
+            <label for="brushSize" class="hint">Tamaño del pincel</label>
+            <input type="range" id="brushSize" min="4" max="80" value="24">
+          </div>
+          <div class="row">
+            <button class="btn primary" id="saveItem">Guardar prenda</button>
+            <button class="btn" id="skipItem">Descartar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OUTFITS -->
+  <section class="view" id="view-outfits" hidden>
+    <div class="controls">
+      <div class="field">
+        <label for="scheme">Armonía de color</label>
+        <select id="scheme">
+          <option value="auto">La mejor para cada combinación</option>
+          <option value="acento">Neutros + un acento</option>
+          <option value="neutro">Solo neutros</option>
+          <option value="mono">Monocromático</option>
+          <option value="analogo">Análogo (colores vecinos)</option>
+          <option value="complementario">Complementario (opuestos)</option>
+          <option value="triadico">Triádico</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="jacketOpt">Jacket</label>
+        <select id="jacketOpt">
+          <option value="auto">Si suma al outfit</option>
+          <option value="si">Siempre</option>
+          <option value="no">Sin jacket</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="lockItem">Partir de una prenda</label>
+        <select id="lockItem"></select>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="genBtn">Crear outfits</button>
+        <button class="btn" id="shuffleBtn">Otras ideas</button>
+      </div>
+    </div>
+    <div class="section-title"><h2>Ideas para hoy</h2><span class="muted" id="genInfo"></span></div>
+    <div class="ogrid" id="outfitGrid"></div>
+    <div class="section-title" id="savedTitle" hidden><h2>Guardados</h2></div>
+    <div class="ogrid" id="savedGrid"></div>
+  </section>
+</main>
+
+<div class="sheet-back" id="sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetName">
+    <div class="tile"><img id="sheetImg" alt=""></div>
+    <div class="panel">
+      <div class="field"><label for="sheetName">Nombre</label><input type="text" id="sheetName" maxlength="48"></div>
+      <div class="field"><label for="sheetCat">Tipo de prenda</label><select id="sheetCat"></select></div>
+      <div class="field"><span class="lbl">Colores</span><div class="colorlist" id="sheetColors"></div></div>
+      <div class="row">
+        <button class="btn primary" id="sheetSave">Guardar cambios</button>
+        <button class="btn" id="sheetCombine">Combinar</button>
+      </div>
+      <div class="row">
+        <button class="btn danger" id="sheetDelete">Eliminar</button>
+        <button class="btn" id="sheetClose">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k === "text") n.textContent = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else if (v != null) n.setAttribute(k, v);
+  }
+  for (const k of kids) if (k != null) n.append(k);
+  return n;
+};
+let toastT;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+/* ---------- Categories ---------- */
+const CATS = [
+  { id: "tops", label: "Camisas y tops" },
+  { id: "bottoms", label: "Pantalones y faldas" },
+  { id: "vestidos", label: "Vestidos y enterizos" },
+  { id: "jackets", label: "Jackets y abrigos" },
+  { id: "zapatos", label: "Zapatos" },
+  { id: "accesorios", label: "Accesorios" },
+];
+const catLabel = id => (CATS.find(c => c.id === id) || {}).label || id;
+for (const sel of ["#itemCat", "#sheetCat"]) for (const c of CATS) $(sel).append(el("option", { value: c.id, text: c.label }));
+
+/* ---------- Color science ---------- */
+const LIN = new Float32Array(256);
+for (let i = 0; i < 256; i++) { const c = i / 255; LIN[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+const fLab = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+function rgbToLab(r, g, b) {
+  const R = LIN[r], G = LIN[g], B = LIN[b];
+  const x = fLab((R * 0.4124 + G * 0.3576 + B * 0.1805) / 0.95047);
+  const y = fLab(R * 0.2126 + G * 0.7152 + B * 0.0722);
+  const z = fLab((R * 0.0193 + G * 0.1192 + B * 0.9505) / 1.08883);
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+}
+const hexToRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const rgbToHex = (r, g, b) => "#" + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  if (!d) return [0, 0, l];
+  const s = d / (1 - Math.abs(2 * l - 1));
+  let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h *= 60; if (h < 0) h += 360;
+  return [h, s, l];
+}
+const NAMES = [
+  ["blanco", "#F5F5F2"], ["crema", "#EFE6D2"], ["beige", "#D8C3A0"], ["camel", "#B8875A"], ["khaki", "#B9AE83"],
+  ["café", "#6B4630"], ["chocolate", "#3E2A20"], ["negro", "#1A1A1A"], ["gris carbón", "#3A3D42"], ["gris", "#8A8D91"],
+  ["gris claro", "#C9CBCD"], ["azul marino", "#1F2A44"], ["azul", "#2F5DA8"], ["azul rey", "#2342C4"], ["celeste", "#9CC3E6"],
+  ["denim", "#4A6A8F"], ["turquesa", "#2BB3B1"], ["verde menta", "#A8DCC3"], ["verde oliva", "#6B6B3A"], ["verde bosque", "#2F5136"],
+  ["verde", "#3E8E4A"], ["amarillo", "#F2D33A"], ["mostaza", "#C99A2E"], ["naranja", "#E57A2E"], ["terracota", "#B5543A"],
+  ["rojo", "#C62F2F"], ["vino", "#6E1F2C"], ["rosa", "#F0A6B8"], ["rosa palo", "#E8C4C0"], ["fucsia", "#D63A8A"],
+  ["coral", "#EE7A6B"], ["lila", "#B7A3D6"], ["morado", "#5E3A8C"],
+].map(([n, h]) => ({ n, lab: rgbToLab(...hexToRgb(h)) }));
+const NEUTRAL_NAMES = new Set(["blanco", "crema", "beige", "camel", "khaki", "café", "chocolate", "negro", "gris carbón", "gris", "gris claro", "azul marino", "denim"]);
+const dE = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+function colorName(lab) { let best = NAMES[0], bd = 1e9; for (const c of NAMES) { const d = dE(lab, c.lab); if (d < bd) { bd = d; best = c; } } return best.n; }
+function enrich(c) {
+  const rgb = hexToRgb(c.hex), lab = rgbToLab(...rgb), [h, s, l] = rgbToHsl(...rgb), name = colorName(lab);
+  const neutral = NEUTRAL_NAMES.has(name) || s < 0.14 || l < 0.12 || l > 0.95;
+  return { hex: c.hex, w: c.w ?? 1, lab, L: lab[0], h, s, l, name, neutral };
+}
+
+/* Dominant colors of opaque pixels (k-means in Lab) */
+function extractColors(imgData) {
+  const { data } = imgData, n = data.length / 4, step = Math.max(1, Math.floor(n / 6000));
+  const pts = [], rgbs = [];
+  for (let i = 0; i < n; i += step) { const o = i * 4; if (data[o + 3] < 200) continue; pts.push(rgbToLab(data[o], data[o + 1], data[o + 2])); rgbs.push([data[o], data[o + 1], data[o + 2]]); }
+  if (!pts.length) return [];
+  const k = Math.min(5, pts.length), cent = [pts[Math.floor(pts.length / 2)].slice()];
+  while (cent.length < k) { let bi = 0, bd = -1; for (let i = 0; i < pts.length; i += 3) { let md = 1e9; for (const c of cent) md = Math.min(md, dE(pts[i], c)); if (md > bd) { bd = md; bi = i; } } cent.push(pts[bi].slice()); }
+  const asg = new Int32Array(pts.length);
+  for (let it = 0; it < 10; it++) {
+    for (let i = 0; i < pts.length; i++) { let bj = 0, bd = 1e9; for (let j = 0; j < k; j++) { const d = dE(pts[i], cent[j]); if (d < bd) { bd = d; bj = j; } } asg[i] = bj; }
+    const s = cent.map(() => [0, 0, 0, 0]);
+    for (let i = 0; i < pts.length; i++) { const a = s[asg[i]]; a[0] += pts[i][0]; a[1] += pts[i][1]; a[2] += pts[i][2]; a[3]++; }
+    s.forEach((a, j) => { if (a[3]) cent[j] = [a[0] / a[3], a[1] / a[3], a[2] / a[3]]; });
+  }
+  let cl = cent.map(() => ({ r: 0, g: 0, b: 0, c: 0 }));
+  for (let i = 0; i < pts.length; i++) { const a = cl[asg[i]]; a.r += rgbs[i][0]; a.g += rgbs[i][1]; a.b += rgbs[i][2]; a.c++; }
+  cl = cl.filter(a => a.c).map(a => { const hex = rgbToHex(a.r / a.c, a.g / a.c, a.b / a.c); return { hex, w: a.c / pts.length, e: enrich({ hex }) }; });
+  cl.sort((a, b) => b.w - a.w);
+  const merged = [];
+  for (const c of cl) {
+    const m = merged.find(x => x.e.name === c.e.name || dE(x.e.lab, c.e.lab) < 12);
+    if (m) m.w += c.w; else merged.push(c);
+  }
+  return merged.filter(c => c.w >= 0.08).slice(0, 3).map(c => ({ hex: c.hex, w: +c.w.toFixed(3) }));
+}
+
+/* ---------- Background removal (border flood fill in Lab) ---------- */
+function computeLab(data, n) {
+  const lab = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const o = i * 4, v = rgbToLab(data[o], data[o + 1], data[o + 2]); lab[i * 3] = v[0]; lab[i * 3 + 1] = v[1]; lab[i * 3 + 2] = v[2]; }
+  return lab;
+}
+function borderRefs(lab, w, h) {
+  const idx = [];
+  const st = Math.max(1, Math.floor((w + h) / 300));
+  for (let x = 0; x < w; x += st) { idx.push(x, (h - 1) * w + x); }
+  for (let y = 0; y < h; y += st) { idx.push(y * w, y * w + w - 1); }
+  const P = idx.map(i => [lab[i * 3], lab[i * 3 + 1], lab[i * 3 + 2]]);
+  const k = 4, cent = [P[0].slice()];
+  while (cent.length < k) { let bi = 0, bd = -1; P.forEach((p, i) => { let md = 1e9; for (const c of cent) md = Math.min(md, dE(p, c)); if (md > bd) { bd = md; bi = i; } }); cent.push(P[bi].slice()); }
+  const cnt = new Array(k).fill(0);
+  for (let it = 0; it < 8; it++) {
+    const s = cent.map(() => [0, 0, 0, 0]);
+    for (const p of P) { let bj = 0, bd = 1e9; cent.forEach((c, j) => { const d = dE(p, c); if (d < bd) { bd = d; bj = j; } }); const a = s[bj]; a[0] += p[0]; a[1] += p[1]; a[2] += p[2]; a[3]++; }
+    s.forEach((a, j) => { if (a[3]) cent[j] = [a[0] / a[3], a[1] / a[3], a[2] / a[3]]; cnt[j] = a[3]; });
+  }
+  // drop tiny border clusters (garment touching the edge)
+  return cent.filter((c, j) => cnt[j] > P.length * 0.06);
+}
+function autoAlpha(src, tol) {
+  const { w, h, lab } = src, n = w * h, alpha = new Uint8ClampedArray(n).fill(255);
+  if (tol <= 0) return alpha;
+  const refs = borderRefs(lab, w, h);
+  const refD = i => { let m = 1e9; const L = lab[i * 3], A = lab[i * 3 + 1], B = lab[i * 3 + 2]; for (const r of refs) { const d = Math.hypot(L - r[0], A - r[1], B - r[2]); if (d < m) m = d; } return m; };
+  const bg = new Uint8Array(n), q = new Int32Array(n);
+  let head = 0, tail = 0;
+  const seed = i => { if (!bg[i] && refD(i) < tol * 1.3) { bg[i] = 1; q[tail++] = i; } };
+  for (let x = 0; x < w; x++) { seed(x); seed((h - 1) * w + x); }
+  for (let y = 0; y < h; y++) { seed(y * w); seed(y * w + w - 1); }
+  const t2 = tol * 1.9, stepT = tol * 0.32;
+  while (head < tail) {
+    const p = q[head++], px = p % w;
+    const nb = [px > 0 ? p - 1 : -1, px < w - 1 ? p + 1 : -1, p - w, p + w];
+    for (const c of nb) {
+      if (c < 0 || c >= n || bg[c]) continue;
+      const d = refD(c);
+      let ok = d < tol;
+      if (!ok && d < t2) { const st = Math.hypot(lab[p * 3] - lab[c * 3], lab[p * 3 + 1] - lab[c * 3 + 1], lab[p * 3 + 2] - lab[c * 3 + 2]); ok = st < stepT; }
+      if (ok) { bg[c] = 1; q[tail++] = c; }
+    }
+  }
+  // keep meaningful foreground islands
+  const lbl = new Int32Array(n), sizes = [0];
+  for (let i = 0; i < n; i++) {
+    if (bg[i] || lbl[i]) continue;
+    const id = sizes.length; let sz = 0; head = tail = 0; q[tail++] = i; lbl[i] = id;
+    while (head < tail) {
+      const p = q[head++], px = p % w; sz++;
+      for (const c of [px > 0 ? p - 1 : -1, px < w - 1 ? p + 1 : -1, p - w, p + w]) if (c >= 0 && c < n && !bg[c] && !lbl[c]) { lbl[c] = id; q[tail++] = c; }
+    }
+    sizes.push(sz);
+  }
+  const big = Math.max(...sizes), minKeep = Math.max(60, big * 0.04);
+  for (let i = 0; i < n; i++) if (bg[i] || sizes[lbl[i]] < minKeep) alpha[i] = 0;
+  // erode 1px to drop halo, then soften the edge
+  const er = alpha.slice();
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) { const i = y * w + x; if (alpha[i] && (!alpha[i - 1] || !alpha[i + 1] || !alpha[i - w] || !alpha[i + w])) er[i] = 0; }
+  const out = new Uint8ClampedArray(n);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let s = 0, c = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const yy = y + dy, xx = x + dx; if (yy < 0 || xx < 0 || yy >= h || xx >= w) continue; s += er[yy * w + xx]; c++; }
+    out[y * w + x] = s / c;
+  }
+  return out;
+}
+
+/* ---------- Storage: this device (IndexedDB) ---------- */
+const Store = {
+  async init() {
+    await new Promise(res => {
+      try {
+        const r = indexedDB.open("closet-cromatico", 1);
+        r.onupgradeneeded = () => { r.result.createObjectStore("items", { keyPath: "id" }); r.result.createObjectStore("outfits", { keyPath: "id" }); };
+        r.onsuccess = () => { this.idb = r.result; res(); };
+        r.onerror = () => res();
+      } catch (e) { res(); }
+    });
+    // Ask the browser not to evict the closet when space runs low.
+    try { if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch (e) { }
+  },
+  all(store) {
+    return new Promise(res => {
+      if (!this.idb) return res([]);
+      try { const r = this.idb.transaction(store).objectStore(store).getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => res([]); } catch (e) { res([]); }
+    });
+  },
+  put(store, v) { return new Promise((res, rej) => { if (!this.idb) return rej(new Error("este navegador no permite guardar datos")); const t = this.idb.transaction(store, "readwrite"); t.objectStore(store).put(v); t.oncomplete = res; t.onerror = () => rej(t.error); }); },
+  del(store, id) { return new Promise(res => { if (!this.idb) return res(); const t = this.idb.transaction(store, "readwrite"); t.objectStore(store).delete(id); t.oncomplete = res; t.onerror = res; }); },
+  async load() {
+    const items = (await this.all("items")).map(r => ({ ...r, url: URL.createObjectURL(r.blob) }));
+    return { items, outfits: await this.all("outfits") };
+  },
+  async addItem(meta, blob, id = "i_" + uid(), createdAt = Date.now()) {
+    const rec = { id, kind: "item", ...meta, blob, createdAt };
+    await this.put("items", rec);
+    return { ...rec, url: URL.createObjectURL(blob) };
+  },
+  async updateItem(item, patch) {
+    const rec = (await this.all("items")).find(r => r.id === item.id);
+    if (rec) await this.put("items", { ...rec, ...patch });
+  },
+  deleteItem(item) { return this.del("items", item.id); },
+  async addOutfit(o, id = "o_" + uid()) {
+    const doc = { id, kind: "outfit", createdAt: Date.now(), ...o };
+    await this.put("outfits", doc);
+    return doc;
+  },
+  deleteOutfit(id) { return this.del("outfits", id); },
+};
+
+/* ---------- Backup (JSON with embedded images) ---------- */
+const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+$("#exportBtn").onclick = async () => {
+  if (!S.items.length) return toast("Todavía no hay prendas para respaldar.");
+  const recs = await Store.all("items");
+  const items = [];
+  for (const r of recs) { const { blob, ...meta } = r; items.push({ ...meta, image: await blobToDataURL(blob) }); }
+  const data = JSON.stringify({ app: "closet-cromatico", version: 1, exportedAt: new Date().toISOString(), items, outfits: S.outfits });
+  const file = new File([data], `closet-respaldo-${new Date().toISOString().slice(0, 10)}.json`, { type: "application/json" });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "Respaldo de mi clóset" }); return; }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  const a = el("a", { href: URL.createObjectURL(file), download: file.name });
+  document.body.append(a); a.click(); a.remove();
+};
+$("#importInput").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (d.app !== "closet-cromatico" || !Array.isArray(d.items)) throw new Error("ese archivo no es un respaldo de Clóset Cromático");
+    const have = new Set(S.items.map(i => i.id));
+    let added = 0;
+    for (const it of d.items) {
+      if (have.has(it.id) || !it.image) continue;
+      const { image, ...meta } = it;
+      const blob = await (await fetch(image)).blob();
+      S.items.push(await Store.addItem({ name: meta.name, cat: meta.cat, colors: meta.colors }, blob, meta.id, meta.createdAt));
+      added++;
+    }
+    const haveO = new Set(S.outfits.map(o => o.id));
+    for (const o of d.outfits || []) if (!haveO.has(o.id)) S.outfits.push(await Store.addOutfit({ itemIds: o.itemIds, scheme: o.scheme, score: o.score }, o.id));
+    $("#outfitGrid").textContent = "";
+    renderCloset();
+    toast(added ? `Importadas ${added} prendas` : "No había prendas nuevas en el respaldo");
+  } catch (err) { toast("No se pudo importar: " + (err.message || "archivo dañado")); }
+};
+
+/* ---------- Example garments (drawn, only while the closet is empty) ---------- */
+const SHAPES = {
+  tee: "M120,40 L162,28 Q200,62 238,28 L280,40 L362,104 L322,166 L292,146 L292,430 L108,430 L108,146 L78,166 L38,104 Z",
+  shirt: "M132,40 L172,26 L200,62 L228,26 L268,40 L330,82 L382,336 L336,348 L292,176 L292,432 L108,432 L108,176 L64,348 L18,336 L70,82 Z",
+  jacket: "M124,36 L170,22 L200,90 L230,22 L276,36 L338,80 L388,350 L338,362 L298,180 L300,440 L100,440 L102,180 L62,362 L12,350 L62,80 Z",
+  pants: "M118,24 L282,24 L304,444 L222,444 L200,150 L178,444 L96,444 Z",
+  skirt: "M140,70 L260,70 L328,390 L72,390 Z",
+  dress: "M152,26 L178,26 Q200,62 222,26 L248,26 L262,138 L336,440 L64,440 L138,138 Z",
+  shoes: "M18,330 L18,284 Q28,246 84,240 L126,206 Q158,220 172,254 Q190,268 190,302 L190,330 Z M210,330 L210,284 Q220,246 276,240 L318,206 Q350,220 364,254 Q382,268 382,302 L382,330 Z",
+};
+const EXAMPLES = [
+  ["Camisa blanca", "tops", "shirt", "#F1F0EB"], ["Camiseta mostaza", "tops", "tee", "#C99A2E"], ["Camisa celeste", "tops", "shirt", "#9CC3E6"],
+  ["Camiseta vino", "tops", "tee", "#6E1F2C"], ["Jean clásico", "bottoms", "pants", "#4A6A8F"], ["Pantalón beige", "bottoms", "pants", "#D8C3A0"],
+  ["Pantalón negro", "bottoms", "pants", "#222326"], ["Falda verde oliva", "bottoms", "skirt", "#6B6B3A"], ["Vestido terracota", "vestidos", "dress", "#B5543A"],
+  ["Jacket camel", "jackets", "jacket", "#B8875A"], ["Jacket azul marino", "jackets", "jacket", "#1F2A44"], ["Tenis blancos", "zapatos", "shoes", "#F2F2EF"],
+  ["Botines café", "zapatos", "shoes", "#6B4630"],
+];
+function drawExample(shape, hex) {
+  const c = document.createElement("canvas"); c.width = 400; c.height = 460;
+  const g = c.getContext("2d"), p = new Path2D(SHAPES[shape]);
+  g.fillStyle = hex; g.fill(p);
+  const gr = g.createLinearGradient(0, 0, 400, 460); gr.addColorStop(0, "rgba(255,255,255,.16)"); gr.addColorStop(1, "rgba(0,0,0,.16)");
+  g.fillStyle = gr; g.fill(p);
+  g.strokeStyle = "rgba(0,0,0,.22)"; g.lineWidth = 2; g.stroke(p);
+  g.strokeStyle = "rgba(0,0,0,.18)"; g.lineWidth = 2;
+  if (shape === "shirt" || shape === "jacket") { g.beginPath(); g.moveTo(200, shape === "jacket" ? 90 : 62); g.lineTo(200, 432); g.stroke(); }
+  if (shape === "pants") { g.beginPath(); g.moveTo(118, 54); g.lineTo(282, 54); g.stroke(); }
+  if (shape === "shoes") { g.fillStyle = "rgba(255,255,255,.55)"; g.fillRect(18, 316, 172, 14); g.fillRect(210, 316, 172, 14); }
+  return c.toDataURL("image/png");
+}
+const exampleItems = EXAMPLES.map(([name, cat, shape, hex], i) => ({ id: "ex" + i, example: true, name, cat, colors: [{ hex, w: 1 }], url: drawExample(shape, hex) }));
+
+/* ---------- State ---------- */
+const S = { items: [], outfits: [], filter: "all", tab: "closet", lock: "", shuffle: 0 };
+const closetItems = () => S.items.length ? S.items : exampleItems;
+const usingExamples = () => !S.items.length;
+const prim = it => it._c || (it._c = enrich((it.colors && it.colors[0]) || { hex: "#888888" }));
+
+/* ---------- Tabs ---------- */
+function setTab(t) {
+  S.tab = t;
+  for (const b of document.querySelectorAll(".tabs button")) b.setAttribute("aria-selected", b.dataset.tab === t);
+  for (const v of ["closet", "agregar", "outfits"]) $("#view-" + v).hidden = v !== t;
+  try { history.replaceState(null, "", "#" + t); } catch (e) { }
+  if (t === "outfits") { renderLockOptions(); if (!$("#outfitGrid").children.length) generate(); renderSaved(); }
+  window.scrollTo({ top: 0 });
+}
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+document.addEventListener("click", e => { const g = e.target.closest("[data-goto]"); if (g) setTab(g.dataset.goto); });
+
+/* ---------- Closet view ---------- */
+function renderCloset() {
+  const items = closetItems();
+  $("#exampleNotice").hidden = !usingExamples();
+  $("#countItems").textContent = S.items.length ? S.items.length : "";
+  const chips = $("#catChips"); chips.textContent = "";
+  const mk = (id, label, n) => el("button", { class: "chip", "aria-pressed": S.filter === id, onclick: () => { S.filter = id; renderCloset(); } }, label, el("span", { class: "n", text: n }));
+  chips.append(mk("all", "Todo", items.length));
+  for (const c of CATS) { const n = items.filter(i => i.cat === c.id).length; if (n) chips.append(mk(c.id, c.label, n)); }
+  const grid = $("#closetGrid"); grid.textContent = "";
+  const shown = items.filter(i => S.filter === "all" || i.cat === S.filter);
+  if (!shown.length) { grid.append(el("div", { class: "empty", style: "grid-column:1/-1" }, el("b", { text: "No hay prendas en esta categoría." }), el("button", { class: "btn", "data-goto": "agregar", text: "Agregar prenda" }))); return; }
+  for (const it of shown) grid.append(itemCard(it));
+}
+function swatchBar(colors) {
+  const s = el("div", { class: "swatches", "aria-hidden": "true" });
+  const tot = colors.reduce((a, c) => a + (c.w || 1), 0) || 1;
+  for (const c of colors) s.append(el("span", { style: `background:${c.hex};width:${(100 * (c.w || 1) / tot).toFixed(1)}%` }));
+  return s;
+}
+function itemCard(it) {
+  const names = (it.colors || []).map(c => enrich(c).name).filter((v, i, a) => a.indexOf(v) === i).join(" · ");
+  return el("button", { class: "card", onclick: () => openSheet(it), "aria-label": it.name },
+    el("div", { class: "tile" }, el("img", { src: it.url, alt: "", loading: "lazy" }), it.example ? el("span", { class: "tag", text: "Ejemplo" }) : null),
+    el("div", { class: "meta" }, el("div", { class: "name", text: it.name || "Sin nombre" }), swatchBar(it.colors || []), el("div", { class: "cname", text: names })));
+}
+
+/* ---------- Item sheet ---------- */
+let sheetItem = null;
+function colorRows(box, colors) {
+  box.textContent = "";
+  if (!colors.length) { box.append(el("p", { class: "hint", text: "Sin colores detectados todavía." })); return; }
+  const tot = colors.reduce((a, c) => a + (c.w || 1), 0) || 1;
+  for (const c of colors) {
+    const e = enrich(c);
+    box.append(el("div", { class: "colorrow" }, el("span", { class: "dot", style: "background:" + c.hex }), el("span", { text: e.name + (e.neutral ? " · neutro" : "") }), el("span", { class: "mono", text: Math.round(100 * (c.w || 1) / tot) + "%" })));
+  }
+}
+function openSheet(it) {
+  sheetItem = it;
+  $("#sheetImg").src = it.url; $("#sheetName").value = it.name || ""; $("#sheetCat").value = it.cat;
+  colorRows($("#sheetColors"), it.colors || []);
+  const del = $("#sheetDelete"); del.classList.remove("armed"); del.textContent = "Eliminar";
+  $("#sheetSave").disabled = del.disabled = !!it.example;
+  $("#sheet").hidden = false;
+}
+const closeSheet = () => { $("#sheet").hidden = true; sheetItem = null; };
+$("#sheetClose").onclick = closeSheet;
+$("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") closeSheet(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#sheet").hidden) closeSheet(); });
+$("#sheetSave").onclick = async () => {
+  const it = sheetItem; if (!it || it.example) return;
+  const patch = { name: $("#sheetName").value.trim() || it.name, cat: $("#sheetCat").value };
+  try { await Store.updateItem(it, patch); Object.assign(it, patch); renderCloset(); closeSheet(); toast("Cambios guardados"); }
+  catch (e) { toast("No se pudo guardar: " + (e.message || e.code || "error")); }
+};
+$("#sheetCombine").onclick = () => { const id = sheetItem.id; closeSheet(); S.lock = id; setTab("outfits"); $("#lockItem").value = id; generate(); };
+$("#sheetDelete").onclick = async () => {
+  const b = $("#sheetDelete"), it = sheetItem;
+  if (!b.classList.contains("armed")) { b.classList.add("armed"); b.textContent = "Toca otra vez para eliminar"; return; }
+  try { await Store.deleteItem(it); S.items = S.items.filter(x => x.id !== it.id); renderCloset(); closeSheet(); toast("Prenda eliminada"); }
+  catch (e) { toast("No se pudo eliminar: " + (e.message || e.code || "error")); }
+};
+
+/* ---------- Upload + editor ---------- */
+const queue = []; let cur = null; let brushMode = "view"; let processed = 0;
+const MAXSIDE = 900;
+$("#fileInput").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
+const drop = $("#drop");
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => addFiles(e.dataTransfer.files));
+function addFiles(files) {
+  const imgs = [...files].filter(f => f.type.startsWith("image/") || /\.(jpe?g|png|webp|heic)$/i.test(f.name));
+  if (!imgs.length) return toast("Elige archivos de imagen (JPG o PNG).");
+  queue.push(...imgs);
+  if (!cur) nextInQueue();
+  else updateQueueInfo();
+}
+function updateQueueInfo() { $("#queueInfo").textContent = queue.length ? `Editando · ${queue.length} más en espera` : "Editando prenda"; }
+function loadImage(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => res(img); img.onerror = () => rej(new Error("No pude abrir esta imagen. Prueba con JPG o PNG.")); img.src = url;
+  });
+}
+async function nextInQueue() {
+  const file = queue.shift();
+  if (!file) { cur = null; $("#editorWrap").hidden = true; $("#drop").hidden = false; return; }
+  $("#drop").hidden = true; $("#editorWrap").hidden = false; updateQueueInfo();
+  let img;
+  try { img = await loadImage(file); } catch (e) { toast(e.message); return nextInQueue(); }
+  const sc = Math.min(1, MAXSIDE / Math.max(img.naturalWidth, img.naturalHeight));
+  const w = Math.max(1, Math.round(img.naturalWidth * sc)), h = Math.max(1, Math.round(img.naturalHeight * sc));
+  const c = $("#editCanvas"); c.width = w; c.height = h;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.drawImage(img, 0, 0, w, h);
+  const orig = g.getImageData(0, 0, w, h);
+  cur = { w, h, orig, lab: null, alpha: null, out: new ImageData(w, h), aiToken: uid() };
+  $("#itemName").value = ""; $("#itemCat").value = "tops"; setAiNote("");
+  setBrush("view");
+  setCutMode("ai");
+  await runAuto();
+  runAI();
+}
+async function runAuto() {
+  if (!cur) return;
+  $("#busy").hidden = false;
+  await new Promise(r => setTimeout(r, 30));
+  if (!cur.lab) cur.lab = computeLab(cur.orig.data, cur.w * cur.h);
+  cur.colorAlpha = autoAlpha(cur, +$("#tol").value);
+  if (cutMode === "color" || !cur.aiAlpha) cur.alpha = cur.colorAlpha.slice();
+  $("#busy").hidden = true;
+  renderEdit(); refreshColors();
+}
+function renderEdit() {
+  const { orig, out, alpha } = cur, d = out.data, s = orig.data;
+  for (let i = 0, n = alpha.length; i < n; i++) { const o = i * 4; d[o] = s[o]; d[o + 1] = s[o + 1]; d[o + 2] = s[o + 2]; d[o + 3] = alpha[i]; }
+  $("#editCanvas").getContext("2d").putImageData(out, 0, 0);
+}
+function refreshColors() { cur.colors = extractColors(cur.out); colorRows($("#detColors"), cur.colors); }
+const tolEl = $("#tol"); $("#tolVal").textContent = tolEl.value;
+let tolT; tolEl.oninput = () => { $("#tolVal").textContent = tolEl.value; clearTimeout(tolT); tolT = setTimeout(runAuto, 220); };
+function setBrush(m) { brushMode = m; $("#brushMode").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === m)); $("#stage").classList.toggle("brush", m !== "view"); }
+$("#brushMode").onclick = e => { const b = e.target.closest("button"); if (b) setBrush(b.dataset.mode); };
+let painting = false, raf = 0;
+const canvas = $("#editCanvas");
+function paintAt(ev) {
+  const r = canvas.getBoundingClientRect(), k = cur.w / r.width;
+  const cx = (ev.clientX - r.left) * k, cy = (ev.clientY - r.top) * k, rad = +$("#brushSize").value * k * 0.5;
+  const { w, h, alpha } = cur;
+  for (let y = Math.max(0, Math.floor(cy - rad)); y < Math.min(h, cy + rad); y++) for (let x = Math.max(0, Math.floor(cx - rad)); x < Math.min(w, cx + rad); x++) {
+    const dd = Math.hypot(x - cx, y - cy) / rad; if (dd > 1) continue;
+    const f = Math.min(1, (1 - dd) * 2.2), i = y * w + x;
+    alpha[i] = brushMode === "erase" ? alpha[i] * (1 - f) : Math.max(alpha[i], f * 255);
+  }
+  if (!raf) raf = requestAnimationFrame(() => { raf = 0; renderEdit(); });
+}
+canvas.addEventListener("pointerdown", e => { if (!cur || brushMode === "view") return; painting = true; canvas.setPointerCapture(e.pointerId); paintAt(e); });
+canvas.addEventListener("pointermove", e => { if (painting) paintAt(e); });
+const endPaint = () => { if (painting) { painting = false; refreshColors(); } };
+canvas.addEventListener("pointerup", endPaint); canvas.addEventListener("pointercancel", endPaint);
+
+function croppedBlob(maxSide) {
+  const { w, h, alpha } = cur;
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (alpha[y * w + x] > 12) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return Promise.resolve(null);
+  const pad = 6; x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
+  const cw = x1 - x0 + 1, ch = y1 - y0 + 1, sc = maxSide ? Math.min(1, maxSide / Math.max(cw, ch)) : 1;
+  const c = document.createElement("canvas"); c.width = Math.round(cw * sc); c.height = Math.round(ch * sc);
+  const g = c.getContext("2d");
+  if (maxSide) { g.fillStyle = "#EDEDED"; g.fillRect(0, 0, c.width, c.height); }
+  g.drawImage(canvas, x0, y0, cw, ch, 0, 0, c.width, c.height);
+  return new Promise(r => c.toBlob(r, "image/png"));
+}
+/* Clears small leftover blobs far from the garment. */
+function dropSpecks(alpha, w, h) {
+  const n = w * h, lbl = new Int32Array(n), q = new Int32Array(n), sizes = [0];
+  for (let i = 0; i < n; i++) {
+    if (alpha[i] < 40 || lbl[i]) continue;
+    const id = sizes.length; let head = 0, tail = 0, sz = 0; q[tail++] = i; lbl[i] = id;
+    while (head < tail) {
+      const p = q[head++], px = p % w; sz++;
+      for (const c of [px > 0 ? p - 1 : -1, px < w - 1 ? p + 1 : -1, p - w, p + w]) if (c >= 0 && c < n && alpha[c] >= 40 && !lbl[c]) { lbl[c] = id; q[tail++] = c; }
+    }
+    sizes.push(sz);
+  }
+  const keep = Math.max(...sizes) * 0.04;
+  for (let i = 0; i < n; i++) if (lbl[i] && sizes[lbl[i]] < keep) alpha[i] = 0;
+}
+
+/* AI cut-out: runs in the browser with an open model (downloaded once, then cached). */
+const BG_LIB = "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm";
+let bgLibPromise = null;
+let cutMode = "ai";
+function setAiNote(t) { const n = $("#aiNote"); n.hidden = !t; n.textContent = t || ""; }
+function setCutMode(m) {
+  cutMode = m;
+  $("#cutMode").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === m));
+  $("#tolField").hidden = m !== "color";
+}
+$("#cutMode").onclick = e => {
+  const b = e.target.closest("button"); if (!b || !cur || b.dataset.mode === cutMode) return;
+  setCutMode(b.dataset.mode);
+  if (cutMode === "ai") { if (cur.aiAlpha) { cur.alpha = cur.aiAlpha.slice(); renderEdit(); refreshColors(); setAiNote("Recortado con IA."); } else runAI(); }
+  else { setAiNote(""); runAuto(); }
+};
+async function runAI() {
+  if (!cur) return;
+  const token = cur.aiToken;
+  setAiNote("Recortando con IA…");
+  $("#busy").hidden = false; $("#busy").textContent = "Recortando con IA…";
+  try {
+    if (!bgLibPromise) bgLibPromise = import(BG_LIB);
+    const lib = await bgLibPromise;
+    const src = document.createElement("canvas"); src.width = cur.w; src.height = cur.h;
+    src.getContext("2d").putImageData(cur.orig, 0, 0);
+    const input = await new Promise(r => src.toBlob(r, "image/png"));
+    const out = await lib.removeBackground(input, {
+      model: "isnet_quint8",
+      output: { format: "image/png" },
+      progress: (key, current, total) => {
+        if (cur && cur.aiToken === token && key.startsWith("fetch") && total) {
+          const t = `Descargando la IA (solo la primera vez)… ${Math.round(current / total * 100)}%`;
+          setAiNote(t); $("#busy").textContent = t;
+        }
+      },
+    });
+    if (!cur || cur.aiToken !== token) return;
+    const bmp = await createImageBitmap(out);
+    const c = document.createElement("canvas"); c.width = cur.w; c.height = cur.h;
+    const g = c.getContext("2d"); g.drawImage(bmp, 0, 0, cur.w, cur.h);
+    const px = g.getImageData(0, 0, cur.w, cur.h).data, a = new Uint8ClampedArray(cur.w * cur.h);
+    // Firm up the model's soft mask: faint haze goes, the garment becomes fully opaque.
+    for (let i = 0; i < a.length; i++) a[i] = (px[i * 4 + 3] - 90) * 255 / 120;
+    dropSpecks(a, cur.w, cur.h);
+    cur.aiAlpha = a; cur.alpha = a.slice();
+    if (cutMode === "ai") { renderEdit(); refreshColors(); }
+    setAiNote("Recortado con IA. Si algo quedó mal, usa el pincel o prueba “Por color”.");
+  } catch (err) {
+    console.error(err);
+    bgLibPromise = null;
+    if (cur && cur.aiToken === token) {
+      setCutMode("color");
+      setAiNote("No pude usar la IA (¿sin internet la primera vez?). Usé el recorte por color.");
+    }
+  } finally {
+    if (cur && cur.aiToken === token) { $("#busy").hidden = true; $("#busy").textContent = "Quitando el fondo…"; }
+  }
+}
+$("#saveItem").onclick = async () => {
+  if (!cur) return;
+  const btn = $("#saveItem"); btn.disabled = true; btn.textContent = "Guardando…";
+  try {
+    const blob = await croppedBlob(0);
+    if (!blob) { toast("La prenda quedó vacía. Baja la sensibilidad o usa Restaurar."); return; }
+    const NOUN = { tops: "Camisa", bottoms: "Pantalón", vestidos: "Vestido", jackets: "Jacket", zapatos: "Zapatos", accesorios: "Accesorio" };
+    const name = $("#itemName").value.trim() || (NOUN[$("#itemCat").value] + " " + (cur.colors[0] ? enrich(cur.colors[0]).name : "")).trim();
+    const item = await Store.addItem({ name, cat: $("#itemCat").value, colors: cur.colors }, blob);
+    S.items.push(item); processed++;
+    $("#outfitGrid").textContent = "";
+    renderCloset(); toast(`Guardada: ${name}`);
+    if (!queue.length) { cur = null; setTab("closet"); }
+    nextInQueue();
+  } catch (e) { toast("No se pudo guardar: " + (e.message || e.code || "error")); }
+  finally { btn.disabled = false; btn.textContent = "Guardar prenda"; }
+};
+$("#skipItem").onclick = () => nextInQueue();
+
+/* ---------- Outfit engine (color harmony) ---------- */
+const hueDiff = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+function relation(a, b) {
+  if (a.neutral || b.neutral) return a.neutral && b.neutral ? ["neutro", 0.8] : ["neutro", 0.88];
+  const d = hueDiff(a.h, b.h);
+  if (d < 18) return ["mono", 0.86];
+  if (d < 52) return ["analogo", 0.82];
+  if (d >= 150) return ["complementario", 0.8];
+  if (d >= 100 && d <= 140) return ["triadico", 0.7];
+  return ["choque", 0.36];
+}
+const W = { tops: 1.4, bottoms: 1.4, vestidos: 2, jackets: 1.1, zapatos: 0.8, accesorios: 0.6 };
+function evaluate(pieces) {
+  const cs = pieces.map(prim);
+  let s = 0, ws = 0;
+  const rels = [];
+  for (let i = 0; i < pieces.length; i++) for (let j = i + 1; j < pieces.length; j++) {
+    const [r, v] = relation(cs[i], cs[j]), w = (W[pieces[i].cat] || 1) * (W[pieces[j].cat] || 1);
+    s += v * w; ws += w; rels.push(r);
+  }
+  let score = ws ? s / ws : 0.7;
+  const chroma = cs.filter(c => !c.neutral), groups = [];
+  for (const c of chroma) if (!groups.some(g => hueDiff(g.h, c.h) < 25)) groups.push(c);
+  if (groups.length > 3) score -= 0.18; else if (groups.length === 3) score -= 0.05;
+  if (!groups.length) score = 0.78;
+  const up = pieces.find(p => p.cat === "tops" || p.cat === "vestidos"), lo = pieces.find(p => p.cat === "bottoms");
+  if (up && lo) { const dl = Math.abs(prim(up).L - prim(lo).L); if (dl > 20) score += 0.06; else if (dl < 6 && prim(up).name !== prim(lo).name) score -= 0.04; }
+  const sh = pieces.find(p => p.cat === "zapatos");
+  if (sh && prim(sh).neutral) score += 0.02;
+  let scheme;
+  if (!groups.length) scheme = "neutro";
+  else if (groups.length === 1) scheme = chroma.length === cs.length ? "mono" : "acento";
+  else {
+    const cr = [];
+    for (let i = 0; i < groups.length; i++) for (let j = i + 1; j < groups.length; j++) cr.push(relation(groups[i], groups[j])[0]);
+    scheme = cr.includes("choque") ? "arriesgado" : cr.includes("complementario") ? "complementario" : cr.includes("triadico") ? "triadico" : "analogo";
+  }
+  return { pieces, score: Math.max(0, Math.min(0.99, score)), scheme, groups, cs };
+}
+const SCHEME_LABEL = { neutro: "Total neutro", acento: "Neutros + acento", mono: "Monocromático", analogo: "Análogo", complementario: "Complementario", triadico: "Triádico", arriesgado: "Atrevido" };
+function why(o) {
+  const g = o.groups.map(c => c.name), neutrals = [...new Set(o.cs.filter(c => c.neutral).map(c => c.name))];
+  switch (o.scheme) {
+    case "neutro": return `Todo en neutros (${neutrals.join(", ")}). Sobrio y fácil de llevar; el interés lo ponen las texturas y los cortes.`;
+    case "acento": return `Base neutra (${neutrals.join(", ")}) con ${g[0]} como único protagonista. Un solo color de acento casi nunca falla.`;
+    case "mono": return `Monocromático en tonos de ${g[0]}. Mezclar claros y oscuros del mismo color se ve pulido y alarga la figura.`;
+    case "analogo": return `${cap(g[0])} y ${g[1]} son vecinos en el círculo cromático: una combinación armoniosa y relajada.`;
+    case "complementario": return `${cap(g[0])} y ${g[1]} están en lados opuestos del círculo cromático y se realzan entre sí. Deja que uno domine.`;
+    case "triadico": return `${cap(g.join(", "))} forman una tríada: colores repartidos en el círculo que dan energía con equilibrio.`;
+    default: return `Mezcla atrevida (${g.join(", ")}). Funciona mejor si un color manda y los demás quedan en detalles.`;
+  }
+}
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+function combos(items, jacketOpt, lockId) {
+  const by = {}; for (const c of CATS) by[c.id] = items.filter(i => i.cat === c.id);
+  const shoes = by.zapatos.length ? by.zapatos : [null];
+  const jackets = jacketOpt === "no" || !by.jackets.length ? [null] : jacketOpt === "si" ? by.jackets : [null, ...by.jackets];
+  const bases = [];
+  for (const t of by.tops) for (const b of by.bottoms) bases.push([t, b]);
+  for (const d of by.vestidos) bases.push([d]);
+  const lock = items.find(i => i.id === lockId), out = [];
+  for (const base of bases) for (const s of shoes) for (const j of jackets) {
+    const pieces = [...base, s, j].filter(Boolean);
+    if (lock && lock.cat === "accesorios") pieces.push(lock);
+    else if (lock && !pieces.includes(lock)) continue;
+    out.push(evaluate(pieces));
+  }
+  return { out, missing: !bases.length };
+}
+function generate() {
+  const items = closetItems(), scheme = $("#scheme").value, lockId = $("#lockItem").value;
+  const { out, missing } = combos(items, $("#jacketOpt").value, lockId);
+  const grid = $("#outfitGrid"); grid.textContent = "";
+  if (missing) {
+    $("#genInfo").textContent = "";
+    grid.append(el("div", { class: "empty", style: "grid-column:1/-1" }, el("b", { text: "Faltan prendas para armar outfits." }), el("span", { class: "muted", text: "Necesito al menos una camisa o top y un pantalón o falda, o un vestido." }), el("button", { class: "btn", "data-goto": "agregar", text: "Agregar prendas" })));
+    return;
+  }
+  let pool = scheme === "auto" ? out.filter(o => o.scheme !== "arriesgado" || o.score > 0.6) : out.filter(o => o.scheme === scheme);
+  const seed = S.shuffle;
+  const rnd = o => { let h = seed * 9301; for (const p of o.pieces) for (const ch of p.id) h = (h * 31 + ch.charCodeAt(0)) % 100003; return (h % 1000) / 1000; };
+  pool = pool.map(o => ({ o, k: o.score + (seed ? rnd(o) * 0.14 : 0) })).sort((a, b) => b.k - a.k).map(x => x.o);
+  const used = {}, pick = [];
+  for (const o of pool) {
+    if (pick.length >= 6) break;
+    if (o.pieces.some(p => p.id !== lockId && (used[p.id] || 0) >= 2)) continue;
+    pick.push(o); o.pieces.forEach(p => used[p.id] = (used[p.id] || 0) + 1);
+  }
+  $("#genInfo").textContent = `${out.length} combinaciones evaluadas${usingExamples() ? " · con prendas de ejemplo" : ""}`;
+  if (!pick.length) { grid.append(el("div", { class: "empty", style: "grid-column:1/-1" }, el("b", { text: "Ninguna combinación encaja con esa armonía." }), el("span", { class: "muted", text: "Prueba otra armonía o agrega prendas de otros colores." }))); return; }
+  for (const o of pick) grid.append(outfitCard(o, null));
+}
+function outfitCard(o, savedId) {
+  const hasJ = o.pieces.some(p => p.cat === "jackets");
+  const lay = el("div", { class: "lay" + (hasJ ? "" : " nojacket") });
+  for (const p of o.pieces) lay.append(el("img", { class: "p-" + p.cat, src: p.url, alt: p.name }));
+  const pct = Math.round(o.score * 100);
+  lay.append(el("span", { class: "score " + (pct >= 80 ? "hi" : pct >= 65 ? "mid" : "lo"), text: `afinidad ${pct}` }));
+  const wheel = el("div", { class: "wheel", role: "img", "aria-label": "Posición de los colores en el círculo cromático" });
+  const seen = new Set();
+  for (const c of o.cs) {
+    if (seen.has(c.hex)) continue; seen.add(c.hex);
+    const r = c.neutral ? 0 : 19, a = c.h * Math.PI / 180, jitter = c.neutral ? (seen.size - 2) * 5 : 0;
+    wheel.append(el("i", { style: `background:${c.hex};left:${23 + r * Math.sin(a) + jitter}px;top:${23 - r * Math.cos(a)}px` }));
+  }
+  const strip = el("div", { class: "strip" });
+  const names = new Set();
+  for (const c of o.cs) { if (names.has(c.name)) continue; names.add(c.name); strip.append(el("span", {}, el("b", { style: "background:" + c.hex }), c.name)); }
+  const actions = el("div", { class: "row" });
+  if (savedId) actions.append(el("button", { class: "btn small danger", text: "Quitar", onclick: async () => { await Store.deleteOutfit(savedId); S.outfits = S.outfits.filter(x => x.id !== savedId); renderSaved(); toast("Outfit quitado"); } }));
+  else actions.append(el("button", {
+    class: "btn small", text: "Guardar outfit", onclick: async ev => {
+      if (o.pieces.some(p => p.example)) return toast("Guarda outfits con tu propia ropa; estas son prendas de ejemplo.");
+      try { const rec = await Store.addOutfit({ itemIds: o.pieces.map(p => p.id), scheme: o.scheme, score: +o.score.toFixed(3) }); S.outfits.push(rec); ev.target.disabled = true; ev.target.textContent = "Guardado"; renderSaved(); }
+      catch (e) { toast("No se pudo guardar: " + (e.message || e.code || "error")); }
+    }
+  }));
+  return el("article", { class: "outfit" }, lay,
+    el("div", { class: "obody" },
+      el("div", { class: "ohead" }, el("h3", { text: SCHEME_LABEL[o.scheme] }), wheel),
+      strip, el("p", { class: "why", text: why(o) }),
+      el("p", { class: "pieces", text: o.pieces.map(p => p.name).join(" + ") }), actions));
+}
+function renderSaved() {
+  const g = $("#savedGrid"); g.textContent = "";
+  const map = Object.fromEntries(S.items.map(i => [i.id, i]));
+  const list = S.outfits.map(o => ({ o, pieces: (o.itemIds || []).map(id => map[id]).filter(Boolean) })).filter(x => x.pieces.length >= 2);
+  $("#savedTitle").hidden = !list.length;
+  for (const { o, pieces } of list.reverse()) g.append(outfitCard(evaluate(pieces), o.id));
+}
+function renderLockOptions() {
+  const sel = $("#lockItem"), keep = S.lock || sel.value; sel.textContent = "";
+  sel.append(el("option", { value: "", text: "Cualquiera" }));
+  for (const c of CATS) {
+    const its = closetItems().filter(i => i.cat === c.id); if (!its.length) continue;
+    const og = el("optgroup", { label: c.label });
+    for (const i of its) og.append(el("option", { value: i.id, text: i.name }));
+    sel.append(og);
+  }
+  sel.value = closetItems().some(i => i.id === keep) ? keep : "";
+  S.lock = "";
+}
+$("#genBtn").onclick = () => { S.shuffle = 0; generate(); };
+$("#shuffleBtn").onclick = () => { S.shuffle++; generate(); };
+["#scheme", "#jacketOpt", "#lockItem"].forEach(s => $(s).onchange = () => { S.shuffle = 0; generate(); });
+
+/* ---------- Boot ---------- */
+(async function boot() {
+  renderCloset();
+  const start = location.hash.slice(1);
+  if (["closet", "agregar", "outfits"].includes(start)) setTab(start);
+  await Store.init();
+  try { const d = await Store.load(); S.items = d.items; S.outfits = d.outfits; }
+  catch (e) { toast("No pude cargar tu clóset: " + (e.message || "error")); }
+  renderCloset();
+  if (S.tab === "outfits") { renderLockOptions(); generate(); renderSaved(); }
+
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  let dismissed = false;
+  try { dismissed = localStorage.getItem("installHint") === "no"; } catch (e) { }
+  if (!standalone && !dismissed && /iphone|ipad|ipod|android/i.test(navigator.userAgent)) $("#installNotice").hidden = false;
+  $("#installDismiss").onclick = () => { $("#installNotice").hidden = true; try { localStorage.setItem("installHint", "no"); } catch (e) { } };
+
+  if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => { });
+})();
+</script>
+</body>
+</html>

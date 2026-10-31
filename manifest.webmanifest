@@ -1,0 +1,17 @@
+{
+  "name": "Clóset Cromático",
+  "short_name": "Clóset",
+  "description": "Sube fotos de tu ropa, quítales el fondo y arma outfits según la colorimetría.",
+  "lang": "es",
+  "start_url": "./#closet",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ECEEEA",
+  "theme_color": "#18202C",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
